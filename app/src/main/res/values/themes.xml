@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 用系统框架主题，不引 AppCompat：界面就是一个 WebView，没必要背一整套
+         AppCompat 的资源。NoActionBar 是因为顶栏由网页自己画。 -->
+    <style name="AppTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_bg</item>
+        <!-- 边到边：状态栏透明，网页背景直接铺上去（观感才连贯）；
+             图标颜色由 MainActivity 按页面明暗动态设置。
+             导航栏保持不透明 —— 老系统上三键导航不会压住网页底栏；
+             Android 15+ 忽略这个值，交给网页自己的 env(safe-area-inset-bottom)。 -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/bar_bg</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

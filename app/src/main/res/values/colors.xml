@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 与网页主题色一致（site.webmanifest 的 theme_color） -->
+    <color name="brand">#FFF97316</color>
+    <color name="window_bg">#FFFFF6EE</color>
+    <color name="bar_bg">#FFFFFFFF</color>
+</resources>

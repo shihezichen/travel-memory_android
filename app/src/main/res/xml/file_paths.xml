@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 只暴露缓存目录下的 capture/ 给相机 App 写临时照片，别的一概不给。 -->
+<paths>
+    <cache-path name="capture" path="capture/" />
+</paths>

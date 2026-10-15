@@ -1,0 +1,15 @@
+/build
+/app/build
+/.gradle
+/local.properties
+/.idea
+*.iml
+/captures
+.cxx
+/app/release
+
+# 打包产物：不进版本库，要分发就挂到 GitHub Release 上
+/dist
+
+# 自签名密钥库：绝对不要提交
+/keystore
