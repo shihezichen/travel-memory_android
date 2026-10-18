@@ -232,6 +232,9 @@ public class MainActivity extends Activity {
         webView.setWebChromeClient(new ShellChromeClient());
         webView.setDownloadListener(this::enqueueDownload);
 
+        // 网页下载桥：window.Android.saveMedia(url, name) 直接存到相册
+        webView.addJavascriptInterface(new GalleryBridge(this), "Android");
+
         webView.loadUrl(SERVER_URL);
     }
 
@@ -413,6 +416,17 @@ public class MainActivity extends Activity {
         cameraOutputUri = null;
     }
 
+    /** 网页下载桥：window.Android.saveMedia(url, name) -> 存到公共 Pictures/TravelMemory（相册可见）。 */
+    private class GalleryBridge {
+        private final MainActivity owner;
+        GalleryBridge(MainActivity o) { this.owner = o; }
+        @JavascriptInterface
+        public void saveMedia(String url, String name) {
+            // DownloadManager 需要在 UI 线程发起
+            owner.runOnUiThread(() -> owner.enqueueToGallery(url, name));
+        }
+    }
+
     // ------------------------------------------------------------------
     // 下载：交给系统 DownloadManager，直接落到公共「下载」目录
     // ------------------------------------------------------------------
@@ -458,6 +472,50 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             Log.e(TAG, "download failed: " + e);
             toast("下载失败，请重试");
+        }
+    }
+
+    // 网页下载桥：把媒体存到公共 Pictures/TravelMemory，相册里直接可见。
+    private void enqueueToGallery(String url, String name) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
+                && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+            ask(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    () -> doEnqueueToGallery(url, name),
+                    () -> toast("没有存储权限，无法保存到相册"));
+            return;
+        }
+        doEnqueueToGallery(url, name);
+    }
+
+    private void doEnqueueToGallery(String url, String name) {
+        try {
+            String fileName = (name != null && !name.isEmpty())
+                    ? name : URLUtil.guessFileName(url, null, null);
+            String lower = fileName.toLowerCase(Locale.ROOT);
+            boolean isVideo = lower.endsWith(".mp4") || lower.endsWith(".mov")
+                    || lower.endsWith(".webm") || lower.endsWith(".m4v") || lower.endsWith(".avi");
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+            request.setMimeType(isVideo ? "video/mp4" : "image/jpeg");
+            request.setTitle(fileName);
+            request.setNotificationVisibility(
+                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setDestinationInExternalPublicDir(
+                    Environment.DIRECTORY_PICTURES, "TravelMemory/" + fileName);
+            // DownloadManager 不共享 WebView 的会话，手动带上 tm_token cookie，
+            // 免得「浏览器里能下、App 里 401」。
+            String cookie = CookieManager.getInstance().getCookie(url);
+            if (cookie != null && !cookie.isEmpty()) {
+                request.addRequestHeader("Cookie", cookie);
+            }
+            DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+            if (dm != null) {
+                dm.enqueue(request);
+                toast("已开始保存到相册：" + fileName);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "gallery download failed: " + e);
+            toast("保存失败，请重试");
         }
     }
 
